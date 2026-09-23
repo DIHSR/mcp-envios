@@ -1,0 +1,31 @@
+{
+  "name": "mcp-brevo-envio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Servidor MCP para envios transacionais e eventos do Brevo.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "build:lambda": "esbuild src/http/lambda.ts --bundle --platform=node --target=node22 --format=cjs --sourcemap --outfile=dist-lambda/lambda.js",
+    "start": "node dist/server.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.test.json"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.163",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.0",
+    "vitest": "^5.0.1"
+  },
+  "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1138.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "dotenv": "^18.0.3",
+    "zod": "^4.6.5"
+  }
+}

@@ -1,0 +1,22 @@
+version = 0.1
+
+[default.build.parameters]
+cached = true
+parallel = true
+template_file = "infra/template.yaml"
+
+[default.deploy.parameters]
+stack_name = "mcp-brevo-envio"
+resolve_s3 = true
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+region = "us-east-1"
+parameter_overrides = [
+  "BrevoSecretArn=arn:aws:secretsmanager:REGIAO:CONTA:secret:SEU_SEGREDO",
+  "BrevoSenderEmail=remetente@example.com",
+  "BrevoSenderName=Equipe Exemplo",
+  "BrevoWhatsappSender=5511999999999",
+  "ClickFilterSeconds=60",
+  "DryRun=false",
+  "LogLevel=info"
+]

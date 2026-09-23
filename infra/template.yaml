@@ -1,0 +1,102 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: MCP Server do Brevo em Lambda com API Gateway HTTP API.
+
+Parameters:
+  BrevoSecretArn:
+    Type: String
+    Description: ARN do segredo JSON com BREVO_API_KEY e MCP_AUTH_TOKEN.
+  BrevoSenderEmail:
+    Type: String
+    Description: E-mail remetente verificado no Brevo.
+  BrevoSenderName:
+    Type: String
+    Description: Nome exibido do remetente.
+  BrevoWhatsappSender:
+    Type: String
+    Description: Número remetente do WhatsApp com código do país e somente dígitos.
+  ClickFilterSeconds:
+    Type: Number
+    Default: 60
+    MinValue: 0
+    MaxValue: 86400
+  DryRun:
+    Type: String
+    Default: "false"
+    AllowedValues:
+      - "true"
+      - "false"
+  LogLevel:
+    Type: String
+    Default: info
+    AllowedValues:
+      - debug
+      - info
+      - error
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures:
+      - arm64
+    MemorySize: 512
+    Timeout: 29
+    Tracing: Active
+    Environment:
+      Variables:
+        NODE_OPTIONS: --enable-source-maps
+
+Resources:
+  BrevoMcpHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 10
+
+  BrevoMcpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../
+      Handler: src/http/lambda.handler
+      Description: Servidor MCP para e-mail e WhatsApp transacionais via Brevo.
+      Environment:
+        Variables:
+          BREVO_SECRET_ARN: !Ref BrevoSecretArn
+          BREVO_SENDER_EMAIL: !Ref BrevoSenderEmail
+          BREVO_SENDER_NAME: !Ref BrevoSenderName
+          BREVO_WHATSAPP_SENDER: !Ref BrevoWhatsappSender
+          MCP_TRANSPORT: http
+          CLICK_FILTER_SECONDS: !Ref ClickFilterSeconds
+          DRY_RUN: !Ref DryRun
+          LOG_LEVEL: !Ref LogLevel
+      Policies:
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Ref BrevoSecretArn
+      Events:
+        McpEndpoint:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref BrevoMcpHttpApi
+            Path: /mcp
+            Method: ANY
+            PayloadFormatVersion: "2.0"
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - src/http/lambda.ts
+        Format: cjs
+        Minify: true
+        Sourcemap: true
+        SourcesContent: false
+        Target: es2022
+
+Outputs:
+  McpEndpointUrl:
+    Description: URL do endpoint Streamable HTTP do MCP.
+    Value: !Sub "https://${BrevoMcpHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/mcp"
+  FunctionArn:
+    Description: ARN da função Lambda.
+    Value: !GetAtt BrevoMcpFunction.Arn
